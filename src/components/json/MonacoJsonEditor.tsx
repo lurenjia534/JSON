@@ -30,6 +30,7 @@ export function MonacoJsonEditor({
   insertSpaces = true,
 }: MonacoJsonEditorProps) {
   const [theme, setTheme] = useState<"vs" | "vs-dark">("vs");
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
@@ -40,14 +41,23 @@ export function MonacoJsonEditor({
     return () => media.removeEventListener?.("change", syncTheme);
   }, []);
 
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const options = useMemo(() => {
     return {
       readOnly,
       minimap: { enabled: false },
       automaticLayout: true,
       scrollBeyondLastLine: false,
-      lineNumbers: "on",
-      wordWrap: "off",
+      lineNumbers: isMobile ? "off" : "on",
+      wordWrap: isMobile ? "on" : "off",
       tabSize,
       insertSpaces,
       folding: true,
@@ -55,14 +65,16 @@ export function MonacoJsonEditor({
       renderWhitespace: "none",
       renderLineHighlight: "none",
       scrollbar: {
-        verticalScrollbarSize: 10,
-        horizontalScrollbarSize: 10,
+        verticalScrollbarSize: isMobile ? 6 : 10,
+        horizontalScrollbarSize: isMobile ? 6 : 10,
       },
       fontFamily:
         'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-      fontSize: 13,
+      fontSize: isMobile ? 15 : 13,
+      lineHeight: isMobile ? 22 : undefined,
+      padding: isMobile ? { top: 12, bottom: 12 } : undefined,
     } as const;
-  }, [insertSpaces, readOnly, tabSize]);
+  }, [insertSpaces, readOnly, tabSize, isMobile]);
 
   return (
     <div className={className}>
@@ -82,3 +94,4 @@ export function MonacoJsonEditor({
     </div>
   );
 }
+
