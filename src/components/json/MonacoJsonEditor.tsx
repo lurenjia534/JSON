@@ -3,6 +3,7 @@
 import type { editor as MonacoEditorNamespace } from "monaco-editor";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "@/components/ui/ThemeProvider";
 
 type MonacoEditor = MonacoEditorNamespace.IStandaloneCodeEditor;
 
@@ -29,17 +30,9 @@ export function MonacoJsonEditor({
   tabSize = 2,
   insertSpaces = true,
 }: MonacoJsonEditorProps) {
-  const [theme, setTheme] = useState<"vs" | "vs-dark">("vs");
+  const { theme } = useTheme();
+  const monacoTheme = theme === "dark" ? "vs-dark" : "vs";
   const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-    if (!media) return;
-    const syncTheme = () => setTheme(media.matches ? "vs-dark" : "vs");
-    syncTheme();
-    media.addEventListener?.("change", syncTheme);
-    return () => media.removeEventListener?.("change", syncTheme);
-  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -82,7 +75,7 @@ export function MonacoJsonEditor({
         height="100%"
         width="100%"
         defaultLanguage="json"
-        theme={theme}
+        theme={monacoTheme}
         value={value}
         onChange={onChange ? (v) => onChange(v ?? "") : undefined}
         options={options}
@@ -94,4 +87,3 @@ export function MonacoJsonEditor({
     </div>
   );
 }
-

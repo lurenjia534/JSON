@@ -2,6 +2,7 @@
 
 import type { editor as MonacoEditorNamespace } from "monaco-editor";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "@/components/ui/ThemeProvider";
 import { JsonFlowCanvas } from "./flow/JsonFlowCanvas";
 import { JsonCanvas } from "./JsonCanvas";
 import { buildJsonGraph } from "./lib/jsonGraph";
@@ -58,6 +59,7 @@ export function JsonFormatter() {
   const [timingMs, setTimingMs] = useState<number | null>(null);
   const [inputFileName, setInputFileName] = useState<string | null>(null);
   const [inputFileBytes, setInputFileBytes] = useState<number | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messageTimerRef = useRef<number | null>(null);
@@ -370,11 +372,51 @@ export function JsonFormatter() {
           <span className="rounded-md bg-zinc-900 px-2 py-0.5 font-mono text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-950">
             {"{}"}
           </span>
-          <span className="hidden text-sm font-semibold tracking-tight sm:inline">JSON Web</span>
+          <span className="hidden text-sm font-semibold tracking-tight sm:inline">
+            JSON Web
+          </span>
         </div>
 
         {/* Desktop buttons - hidden on mobile */}
         <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            onClick={toggleTheme}
+            aria-label="切换主题"
+          >
+            {theme === "dark" ? (
+              <svg
+                className="h-4.5 w-4.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <title>切换到浅色</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.75a5.25 5.25 0 100 10.5 5.25 5.25 0 000-10.5zM12 2.25v1.5M12 20.25v1.5M4.5 12h-1.5M21 12h-1.5M5.47 5.47l-1.06-1.06M19.59 19.59l-1.06-1.06M5.47 18.53l-1.06 1.06M19.59 4.41l-1.06 1.06"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="h-4.5 w-4.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <title>切换到深色</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 12.79A9 9 0 1111.21 3 7.5 7.5 0 0021 12.79z"
+                />
+              </svg>
+            )}
+          </button>
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
@@ -428,11 +470,60 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            onClick={toggleTheme}
+            aria-label="切换主题"
+          >
+            {theme === "dark" ? (
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <title>切换到浅色</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.75a5.25 5.25 0 100 10.5 5.25 5.25 0 000-10.5zM12 2.25v1.5M12 20.25v1.5M4.5 12h-1.5M21 12h-1.5M5.47 5.47l-1.06-1.06M19.59 19.59l-1.06-1.06M5.47 18.53l-1.06 1.06M19.59 4.41l-1.06 1.06"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <title>切换到深色</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 12.79A9 9 0 1111.21 3 7.5 7.5 0 0021 12.79z"
+                />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
             onClick={handlePasteFromClipboard}
             aria-label="粘贴"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <title>粘贴</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
+              />
             </svg>
           </button>
           <button
@@ -450,8 +541,19 @@ export function JsonFormatter() {
             aria-label="更多操作"
             aria-expanded={mobileMenuOpen}
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <title>更多操作</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"
+              />
             </svg>
           </button>
         </div>
@@ -471,32 +573,74 @@ export function JsonFormatter() {
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 dark:text-zinc-100 dark:hover:bg-zinc-800"
-            onClick={() => { handlePickFile(); setMobileMenuOpen(false); }}
+            onClick={() => {
+              handlePickFile();
+              setMobileMenuOpen(false);
+            }}
           >
-            <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            <svg
+              className="h-4 w-4 text-zinc-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <title>上传文件</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+              />
             </svg>
             上传文件
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
-            onClick={() => { handleMinify(); setMobileMenuOpen(false); }}
+            onClick={() => {
+              handleMinify();
+              setMobileMenuOpen(false);
+            }}
             disabled={!input.trim()}
           >
-            <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+            <svg
+              className="h-4 w-4 text-zinc-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <title>压缩</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+              />
             </svg>
             压缩
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
-            onClick={() => { handleValidate(); setMobileMenuOpen(false); }}
+            onClick={() => {
+              handleValidate();
+              setMobileMenuOpen(false);
+            }}
             disabled={!input.trim()}
           >
-            <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="h-4 w-4 text-zinc-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <title>校验</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             校验
           </button>
@@ -504,11 +648,25 @@ export function JsonFormatter() {
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30"
-            onClick={() => { handleClear(); setMobileMenuOpen(false); }}
+            onClick={() => {
+              handleClear();
+              setMobileMenuOpen(false);
+            }}
             disabled={!input && !output}
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <title>清空</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+              />
             </svg>
             清空
           </button>
@@ -519,30 +677,33 @@ export function JsonFormatter() {
         <div className="inline-flex flex-1 items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
           <button
             type="button"
-            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${mobilePane === "input"
-              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-              : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              }`}
+            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+              mobilePane === "input"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            }`}
             onClick={switchToInput}
           >
             输入
           </button>
           <button
             type="button"
-            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${mobilePane === "canvas"
-              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-              : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              }`}
+            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+              mobilePane === "canvas"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            }`}
             onClick={switchToCanvas}
           >
             画布
           </button>
           <button
             type="button"
-            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${mobilePane === "output"
-              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-              : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              }`}
+            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+              mobilePane === "output"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            }`}
             onClick={switchToOutput}
           >
             输出
@@ -552,8 +713,9 @@ export function JsonFormatter() {
 
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
         <section
-          className={`min-h-0 flex-col lg:flex lg:border-r lg:border-zinc-200/70 lg:dark:border-zinc-800/70 ${mobilePane === "input" ? "flex" : "hidden"
-            }`}
+          className={`min-h-0 flex-col lg:flex lg:border-r lg:border-zinc-200/70 lg:dark:border-zinc-800/70 ${
+            mobilePane === "input" ? "flex" : "hidden"
+          }`}
         >
           <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40">
             <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -635,27 +797,30 @@ export function JsonFormatter() {
         </section>
 
         <section
-          className={`min-h-0 flex-col lg:flex ${mobilePane === "input" ? "hidden" : "flex"
-            }`}
+          className={`min-h-0 flex-col lg:flex ${
+            mobilePane === "input" ? "hidden" : "flex"
+          }`}
         >
           <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40">
             <div className="inline-flex items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
               <button
                 type="button"
-                className={`inline-flex h-8 items-center justify-center rounded-full px-3 font-medium ${rightPane === "canvas"
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                  : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                  }`}
+                className={`inline-flex h-8 items-center justify-center rounded-full px-3 font-medium ${
+                  rightPane === "canvas"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                    : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                }`}
                 onClick={switchToCanvas}
               >
                 画布
               </button>
               <button
                 type="button"
-                className={`inline-flex h-8 items-center justify-center rounded-full px-3 font-medium ${rightPane === "output"
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                  : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                  }`}
+                className={`inline-flex h-8 items-center justify-center rounded-full px-3 font-medium ${
+                  rightPane === "output"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                    : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                }`}
                 onClick={switchToOutput}
               >
                 输出
@@ -768,15 +933,25 @@ export function JsonFormatter() {
 
       <footer className="flex shrink-0 items-center gap-2 border-t border-zinc-200/70 bg-white/80 px-3 py-2 text-xs text-zinc-500 backdrop-blur sm:gap-3 dark:border-zinc-800/70 dark:bg-zinc-950/70 dark:text-zinc-400">
         <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-          <span className="whitespace-nowrap">{formatBytes(stats.inputBytes)} → {formatBytes(stats.outputBytes)}</span>
-          {timingMs != null ? <span className="hidden whitespace-nowrap sm:inline">{timingMs.toFixed(0)}ms</span> : null}
+          <span className="whitespace-nowrap">
+            {formatBytes(stats.inputBytes)} → {formatBytes(stats.outputBytes)}
+          </span>
+          {timingMs != null ? (
+            <span className="hidden whitespace-nowrap sm:inline">
+              {timingMs.toFixed(0)}ms
+            </span>
+          ) : null}
           {outputKind ? (
-            <span className="hidden sm:inline">{outputKind === "formatted" ? "已格式化" : "已压缩"}</span>
+            <span className="hidden sm:inline">
+              {outputKind === "formatted" ? "已格式化" : "已压缩"}
+            </span>
           ) : null}
         </div>
         <div className="min-w-0 flex-1 text-right">
           {error ? (
-            <span className="truncate text-red-600 dark:text-red-400">{error}</span>
+            <span className="truncate text-red-600 dark:text-red-400">
+              {error}
+            </span>
           ) : message ? (
             <span className="truncate">{message}</span>
           ) : null}

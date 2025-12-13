@@ -11,6 +11,7 @@ import {
 } from "@xyflow/react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "@/components/ui/ThemeProvider";
 import type { JsonGraph } from "../lib/jsonGraph";
 import { JsonFlowNode, type JsonFlowNodeData } from "./JsonFlowNode";
 
@@ -28,6 +29,7 @@ export function JsonFlowCanvas({ graph }: { graph: JsonGraph | null }) {
   const [nodes, setNodes] = useState<Node<JsonFlowNodeData, "jsonNode">[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const { theme } = useTheme();
   const rfRef = useRef<ReactFlowInstance<
     Node<JsonFlowNodeData, "jsonNode">,
     Edge
@@ -35,6 +37,8 @@ export function JsonFlowCanvas({ graph }: { graph: JsonGraph | null }) {
 
   const base = useMemo(() => {
     if (!graph) return null;
+    const edgeColor =
+      theme === "dark" ? "rgba(226,232,240,0.55)" : "rgba(148,163,184,0.65)";
 
     const nextNodes: Node<JsonFlowNodeData, "jsonNode">[] = graph.nodes.map(
       (n) => ({
@@ -50,11 +54,11 @@ export function JsonFlowCanvas({ graph }: { graph: JsonGraph | null }) {
       source: e.from,
       target: e.to,
       animated: false,
-      style: { strokeWidth: 1.25, stroke: "rgba(148,163,184,0.65)" },
+      style: { strokeWidth: 1.25, stroke: edgeColor },
     }));
 
     return { nodes: nextNodes, edges: nextEdges };
-  }, [graph]);
+  }, [graph, theme]);
 
   useEffect(() => {
     if (!graph || !base) {
@@ -145,7 +149,15 @@ export function JsonFlowCanvas({ graph }: { graph: JsonGraph | null }) {
         }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background gap={18} size={1} color="rgba(148,163,184,0.35)" />
+        <Background
+          gap={18}
+          size={1}
+          color={
+            theme === "dark"
+              ? "rgba(255,255,255,0.08)"
+              : "rgba(148,163,184,0.35)"
+          }
+        />
         <Controls position="bottom-right" showInteractive={false} />
       </ReactFlow>
 

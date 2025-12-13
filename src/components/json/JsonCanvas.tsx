@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "@/components/ui/ThemeProvider";
 import { useElementSize } from "./hooks/useElementSize";
 import type { JsonGraph } from "./lib/jsonGraph";
 import { layoutJsonGraph } from "./lib/jsonLayout";
@@ -12,6 +13,7 @@ function clamp(value: number, min: number, max: number): number {
 export function JsonCanvas({ graph }: { graph: JsonGraph | null }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { theme } = useTheme();
   const { width, height } = useElementSize(containerRef);
   const rootId = graph?.rootId ?? null;
 
@@ -78,8 +80,7 @@ export function JsonCanvas({ graph }: { graph: JsonGraph | null }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    const isDark =
-      window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+    const isDark = theme === "dark";
     const colors = isDark
       ? {
           edge: "rgba(255,255,255,0.18)",
@@ -265,7 +266,7 @@ export function JsonCanvas({ graph }: { graph: JsonGraph | null }) {
         ctx.fill();
       }
     }
-  }, [layout, rootId, selectedId, view, width, height]);
+  }, [layout, rootId, selectedId, theme, view, width, height]);
 
   function screenToWorld(
     screenX: number,
