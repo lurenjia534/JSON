@@ -2,6 +2,7 @@
 
 import type { editor as MonacoEditorNamespace } from "monaco-editor";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { JsonFlowCanvas } from "./flow/JsonFlowCanvas";
 import { JsonCanvas } from "./JsonCanvas";
 import { buildJsonGraph } from "./lib/jsonGraph";
 import {
@@ -17,6 +18,7 @@ type IndentOption = "2" | "4" | "tab";
 type OutputKind = "formatted" | "minified" | null;
 type RightPane = "canvas" | "output";
 type GraphPreset = "default" | "more" | "all";
+type CanvasMode = "flow" | "native";
 
 type MonacoEditor = MonacoEditorNamespace.IStandaloneCodeEditor;
 
@@ -47,6 +49,7 @@ export function JsonFormatter() {
   const [indent, setIndent] = useState<IndentOption>("2");
   const [sortKeys, setSortKeys] = useState<boolean>(false);
   const [graphPreset, setGraphPreset] = useState<GraphPreset>("default");
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>("flow");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [timingMs, setTimingMs] = useState<number | null>(null);
@@ -517,20 +520,35 @@ export function JsonFormatter() {
             </div>
 
             {rightPane === "canvas" ? (
-              <label className="inline-flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                <span>画布</span>
-                <select
-                  className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-                  value={graphPreset}
-                  onChange={(e) =>
-                    setGraphPreset(e.target.value as GraphPreset)
-                  }
-                >
-                  <option value="default">默认</option>
-                  <option value="more">更多</option>
-                  <option value="all">全部（谨慎）</option>
-                </select>
-              </label>
+              <>
+                <label className="inline-flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <span>画布</span>
+                  <select
+                    className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                    value={canvasMode}
+                    onChange={(e) =>
+                      setCanvasMode(e.target.value as CanvasMode)
+                    }
+                  >
+                    <option value="flow">Flow</option>
+                    <option value="native">Native</option>
+                  </select>
+                </label>
+                <label className="inline-flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <span>范围</span>
+                  <select
+                    className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                    value={graphPreset}
+                    onChange={(e) =>
+                      setGraphPreset(e.target.value as GraphPreset)
+                    }
+                  >
+                    <option value="default">默认</option>
+                    <option value="more">更多</option>
+                    <option value="all">全部（谨慎）</option>
+                  </select>
+                </label>
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <button
@@ -593,7 +611,13 @@ export function JsonFormatter() {
                 ) : null}
               </div>
             ) : (
-              <JsonCanvas graph={graph} />
+              <div className="h-full w-full">
+                {canvasMode === "flow" ? (
+                  <JsonFlowCanvas graph={graph} />
+                ) : (
+                  <JsonCanvas graph={graph} />
+                )}
+              </div>
             )}
           </div>
         </section>
