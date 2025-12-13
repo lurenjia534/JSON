@@ -19,6 +19,7 @@ type OutputKind = "formatted" | "minified" | null;
 type RightPane = "canvas" | "output";
 type GraphPreset = "default" | "more" | "all";
 type CanvasMode = "flow" | "native";
+type MobilePane = "input" | RightPane;
 
 type MonacoEditor = MonacoEditorNamespace.IStandaloneCodeEditor;
 
@@ -43,6 +44,7 @@ export function JsonFormatter() {
   const [output, setOutput] = useState<string>("");
   const [outputKind, setOutputKind] = useState<OutputKind>(null);
   const [rightPane, setRightPane] = useState<RightPane>("canvas");
+  const [mobilePane, setMobilePane] = useState<MobilePane>("input");
   const [parsedValue, setParsedValue] = useState<unknown | undefined>(
     undefined,
   );
@@ -346,8 +348,22 @@ export function JsonFormatter() {
     }
   }
 
+  function switchToInput() {
+    setMobilePane("input");
+  }
+
+  function switchToCanvas() {
+    setRightPane("canvas");
+    setMobilePane("canvas");
+  }
+
+  function switchToOutput() {
+    setRightPane("output");
+    setMobilePane("output");
+  }
+
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-100">
+    <div className="flex h-[100svh] flex-col overflow-hidden bg-zinc-50 text-zinc-900 lg:h-screen dark:bg-black dark:text-zinc-100">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-zinc-200/70 bg-white/80 px-3 backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/70">
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-zinc-900 px-2 py-0.5 font-mono text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-950">
@@ -412,8 +428,50 @@ export function JsonFormatter() {
         />
       </header>
 
+      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200/70 bg-white/60 px-2 py-2 lg:hidden dark:border-zinc-800/70 dark:bg-zinc-950/40">
+        <div className="inline-flex flex-1 items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
+          <button
+            type="button"
+            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+              mobilePane === "input"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            }`}
+            onClick={switchToInput}
+          >
+            输入
+          </button>
+          <button
+            type="button"
+            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+              mobilePane === "canvas"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            }`}
+            onClick={switchToCanvas}
+          >
+            画布
+          </button>
+          <button
+            type="button"
+            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+              mobilePane === "output"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            }`}
+            onClick={switchToOutput}
+          >
+            输出
+          </button>
+        </div>
+      </div>
+
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
-        <section className="flex min-h-0 flex-col lg:border-r lg:border-zinc-200/70 lg:dark:border-zinc-800/70">
+        <section
+          className={`min-h-0 flex-col lg:flex lg:border-r lg:border-zinc-200/70 lg:dark:border-zinc-800/70 ${
+            mobilePane === "input" ? "flex" : "hidden"
+          }`}
+        >
           <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -492,7 +550,11 @@ export function JsonFormatter() {
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-col">
+        <section
+          className={`min-h-0 flex-col lg:flex ${
+            mobilePane === "input" ? "hidden" : "flex"
+          }`}
+        >
           <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40">
             <div className="inline-flex items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
               <button
@@ -502,7 +564,7 @@ export function JsonFormatter() {
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
                     : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
                 }`}
-                onClick={() => setRightPane("canvas")}
+                onClick={switchToCanvas}
               >
                 画布
               </button>
@@ -513,7 +575,7 @@ export function JsonFormatter() {
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
                     : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
                 }`}
-                onClick={() => setRightPane("output")}
+                onClick={switchToOutput}
               >
                 输出
               </button>
