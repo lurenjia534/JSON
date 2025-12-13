@@ -363,7 +363,7 @@ export function JsonFormatter() {
   }
 
   return (
-    <div className="flex h-[100svh] flex-col overflow-hidden bg-zinc-50 text-zinc-900 lg:h-screen dark:bg-black dark:text-zinc-100">
+    <div className="flex h-svh flex-col overflow-hidden bg-zinc-50 text-zinc-900 lg:h-screen dark:bg-black dark:text-zinc-100">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-zinc-200/70 bg-white/80 px-3 backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/70">
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-zinc-900 px-2 py-0.5 font-mono text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-950">

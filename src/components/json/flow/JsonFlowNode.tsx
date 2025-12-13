@@ -15,7 +15,7 @@ export function JsonFlowNode(props: NodeProps) {
 
   return (
     <div
-      className={`w-[280px] rounded-xl border bg-white/95 shadow-sm backdrop-blur dark:bg-zinc-950/90 ${
+      className={`w-70 rounded-xl border bg-white/95 shadow-sm backdrop-blur dark:bg-zinc-950/90 ${
         props.selected
           ? "border-sky-500 ring-2 ring-sky-200 dark:ring-sky-500/30"
           : "border-zinc-200 dark:border-zinc-800"
@@ -24,7 +24,7 @@ export function JsonFlowNode(props: NodeProps) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!h-2.5 !w-2.5 !border-2 !border-zinc-300 !bg-white dark:!border-zinc-700 dark:!bg-zinc-950"
+        className="h-2.5! w-2.5! border-2! border-zinc-300! bg-white! dark:border-zinc-700! dark:bg-zinc-950!"
       />
 
       <div className="flex items-center justify-between gap-3 border-b border-zinc-200/70 px-3 py-2 dark:border-zinc-800/70">
@@ -39,7 +39,7 @@ export function JsonFlowNode(props: NodeProps) {
       <div className="px-3 py-2 font-mono text-[11px] leading-5">
         {rows.map((row) => (
           <div key={row.key} className="flex items-center gap-2">
-            <span className="w-[70px] shrink-0 truncate text-red-600/90 dark:text-red-300/90">
+            <span className="w-17.5 shrink-0 truncate text-red-600/90 dark:text-red-300/90">
               {row.key}
             </span>
             <span className="min-w-0 flex-1 truncate text-sky-700 dark:text-sky-300">
@@ -55,7 +55,7 @@ export function JsonFlowNode(props: NodeProps) {
       <Handle
         type="source"
         position={Position.Right}
-        className="!h-2.5 !w-2.5 !border-2 !border-zinc-300 !bg-white dark:!border-zinc-700 dark:!bg-zinc-950"
+        className="h-2.5! w-2.5! border-2! border-zinc-300! bg-white! dark:border-zinc-700! dark:bg-zinc-950!"
       />
     </div>
   );

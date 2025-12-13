@@ -360,7 +360,7 @@ export function JsonCanvas({ graph }: { graph: JsonGraph | null }) {
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full bg-[radial-gradient(circle_at_1px_1px,rgba(24,24,27,0.12)_1px,transparent_0)] [background-size:18px_18px] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(244,244,245,0.10)_1px,transparent_0)]"
+      className="relative h-full w-full bg-[radial-gradient(circle_at_1px_1px,rgba(24,24,27,0.12)_1px,transparent_0)] bg-size-[18px_18px] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(244,244,245,0.10)_1px,transparent_0)]"
     >
       <canvas
         ref={canvasRef}
