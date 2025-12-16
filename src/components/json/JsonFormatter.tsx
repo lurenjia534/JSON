@@ -32,6 +32,9 @@ type MonacoEditor = MonacoEditorNamespace.IStandaloneCodeEditor;
 export function JsonFormatter() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [wordWrap, setWordWrap] = useState(false);
+  const [lineNumberMode, setLineNumberMode] = useState<
+    "off" | "focus" | "full"
+  >("off");
   const { theme, toggleTheme } = useTheme();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -291,6 +294,22 @@ export function JsonFormatter() {
               自动换行
             </label>
           </div>
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100">
+            <span className="w-16 text-left text-xs text-zinc-500 dark:text-zinc-400">
+              行号
+            </span>
+            <select
+              className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              value={lineNumberMode}
+              onChange={(e) =>
+                setLineNumberMode(e.target.value as "off" | "focus" | "full")
+              }
+            >
+              <option value="off">关闭</option>
+              <option value="focus">聚焦</option>
+              <option value="full">全部</option>
+            </select>
+          </div>
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
@@ -443,6 +462,20 @@ export function JsonFormatter() {
               />
               <span>自动换行</span>
             </label>
+            <label className="hidden items-center gap-2 text-xs text-zinc-600 sm:inline-flex dark:text-zinc-400">
+              <span>行号</span>
+              <select
+                className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                value={lineNumberMode}
+                onChange={(e) =>
+                  setLineNumberMode(e.target.value as "off" | "focus" | "full")
+                }
+              >
+                <option value="off">关闭</option>
+                <option value="focus">聚焦</option>
+                <option value="full">全部</option>
+              </select>
+            </label>
 
             <button
               type="button"
@@ -465,6 +498,7 @@ export function JsonFormatter() {
               tabSize={tabSize}
               insertSpaces={insertSpaces}
               wordWrap={wordWrap ? "on" : "off"}
+              lineNumberMode={lineNumberMode}
               onMountEditor={(editor) => {
                 inputEditorRef.current = editor;
               }}
@@ -590,6 +624,7 @@ export function JsonFormatter() {
                   tabSize={tabSize}
                   insertSpaces={insertSpaces}
                   wordWrap={wordWrap ? "on" : "off"}
+                  lineNumberMode={lineNumberMode}
                   onMountEditor={(editor) => {
                     outputEditorRef.current = editor;
                   }}

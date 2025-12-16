@@ -19,6 +19,7 @@ export type MonacoJsonEditorProps = {
   tabSize?: number;
   insertSpaces?: boolean;
   wordWrap?: "on" | "off";
+  lineNumberMode?: "off" | "full" | "focus";
 };
 
 export function MonacoJsonEditor({
@@ -31,10 +32,15 @@ export function MonacoJsonEditor({
   tabSize = 2,
   insertSpaces = true,
   wordWrap = "off",
+  lineNumberMode = "off",
 }: MonacoJsonEditorProps) {
   const { theme } = useTheme();
   const monacoTheme = theme === "dark" ? "vs-dark" : "vs";
   const [isMobile, setIsMobile] = useState(false);
+  const [focusLine, setFocusLine] = useState<number | null>(null);
+  const [editorInstance, setEditorInstance] = useState<MonacoEditor | null>(
+    null,
+  );
 
   useEffect(() => {
     const checkMobile = () => {
@@ -45,13 +51,39 @@ export function MonacoJsonEditor({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (lineNumberMode !== "focus") {
+      setFocusLine(null);
+    }
+  }, [lineNumberMode]);
+
+  useEffect(() => {
+    if (!editorInstance || lineNumberMode !== "focus") return;
+    const disposable = editorInstance.onDidChangeCursorPosition((e) => {
+      setFocusLine(e.position.lineNumber);
+    });
+    return () => {
+      disposable.dispose();
+    };
+  }, [editorInstance, lineNumberMode]);
+
+  const lineNumbersOption = useMemo(() => {
+    if (lineNumberMode === "full") return "on" as const;
+    if (lineNumberMode === "off") return "off" as const;
+    return (line: number) =>
+      focusLine != null && Math.abs(line - focusLine) <= 1 ? String(line) : "";
+  }, [focusLine, lineNumberMode]);
+
   const options = useMemo(() => {
     return {
       readOnly,
       minimap: { enabled: false },
       automaticLayout: true,
       scrollBeyondLastLine: false,
-      lineNumbers: isMobile ? "off" : "on",
+      lineNumbers: isMobile ? "off" : lineNumbersOption,
+      lineNumbersMinChars: lineNumberMode === "focus" ? 1 : undefined,
+      glyphMargin: false,
+      lineDecorationsWidth: 8,
       wordWrap,
       tabSize,
       insertSpaces,
@@ -69,7 +101,15 @@ export function MonacoJsonEditor({
       lineHeight: isMobile ? 22 : undefined,
       padding: isMobile ? { top: 12, bottom: 12 } : undefined,
     } as const;
-  }, [insertSpaces, isMobile, readOnly, tabSize, wordWrap]);
+  }, [
+    insertSpaces,
+    isMobile,
+    lineNumberMode,
+    lineNumbersOption,
+    readOnly,
+    tabSize,
+    wordWrap,
+  ]);
 
   return (
     <div className={className}>
@@ -82,6 +122,7 @@ export function MonacoJsonEditor({
         onChange={onChange ? (v) => onChange(v ?? "") : undefined}
         options={options}
         onMount={(editor) => {
+          setEditorInstance(editor as MonacoEditor);
           onMountEditor?.(editor as MonacoEditor);
         }}
         aria-label={ariaLabel}
