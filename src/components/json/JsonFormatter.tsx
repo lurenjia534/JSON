@@ -13,420 +13,88 @@ import {
   Upload,
 } from "lucide-react";
 import type { editor as MonacoEditorNamespace } from "monaco-editor";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { useTheme } from "@/components/ui/ThemeProvider";
+import { OUTPUT_KIND_LABELS } from "@/features/json-formatter/constants";
+import { useJsonFormatterState } from "@/features/json-formatter/hooks/useJsonFormatterState";
+import type {
+  CanvasMode,
+  GraphPreset,
+  IndentOption,
+} from "@/features/json-formatter/types";
 import { JsonFlowCanvas } from "./flow/JsonFlowCanvas";
 import { JsonCanvas } from "./JsonCanvas";
-import { buildJsonGraph } from "./lib/jsonGraph";
-import {
-  escapeJsonString,
-  extractJsonErrorPosition,
-  formatBytes,
-  indexToLineColumn,
-  normalizeJsonText,
-  sortKeysDeep,
-  unescapeJsonString,
-} from "./lib/jsonUtils";
+import { formatBytes } from "./lib/jsonUtils";
 import { MonacoJsonEditor } from "./MonacoJsonEditor";
-
-type IndentOption = "2" | "4" | "tab";
-type OutputKind = "formatted" | "minified" | "escaped" | "unescaped" | null;
-type RightPane = "canvas" | "output";
-type GraphPreset = "default" | "more" | "all";
-type CanvasMode = "flow" | "native";
-type MobilePane = "input" | RightPane;
 
 type MonacoEditor = MonacoEditorNamespace.IStandaloneCodeEditor;
 
-type GraphOptions = {
-  maxDepth: number;
-  maxNodes: number;
-  maxChildrenPerNode: number;
-};
-
-const GRAPH_PRESETS: Record<GraphPreset, GraphOptions> = {
-  default: { maxDepth: 6, maxNodes: 240, maxChildrenPerNode: 30 },
-  more: { maxDepth: 12, maxNodes: 3000, maxChildrenPerNode: 200 },
-  all: {
-    maxDepth: Number.POSITIVE_INFINITY,
-    maxNodes: Number.POSITIVE_INFINITY,
-    maxChildrenPerNode: Number.POSITIVE_INFINITY,
-  },
-};
-
-const OUTPUT_KIND_LABELS: Record<NonNullable<OutputKind>, string> = {
-  formatted: "已格式化",
-  minified: "已压缩",
-  escaped: "已转义",
-  unescaped: "已反转义",
-};
-
 export function JsonFormatter() {
-  const [input, setInput] = useState<string>("");
-  const [output, setOutput] = useState<string>("");
-  const [outputKind, setOutputKind] = useState<OutputKind>(null);
-  const [rightPane, setRightPane] = useState<RightPane>("canvas");
-  const [mobilePane, setMobilePane] = useState<MobilePane>("input");
-  const [parsedValue, setParsedValue] = useState<unknown | undefined>(
-    undefined,
-  );
-  const [indent, setIndent] = useState<IndentOption>("2");
-  const [sortKeys, setSortKeys] = useState<boolean>(false);
-  const [graphPreset, setGraphPreset] = useState<GraphPreset>("default");
-  const [canvasMode, setCanvasMode] = useState<CanvasMode>("flow");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [timingMs, setTimingMs] = useState<number | null>(null);
-  const [inputFileName, setInputFileName] = useState<string | null>(null);
-  const [inputFileBytes, setInputFileBytes] = useState<number | null>(null);
   const { theme, toggleTheme } = useTheme();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const messageTimerRef = useRef<number | null>(null);
   const inputEditorRef = useRef<MonacoEditor | null>(null);
   const outputEditorRef = useRef<MonacoEditor | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (messageTimerRef.current != null) {
-        window.clearTimeout(messageTimerRef.current);
+  const { state, actions } = useJsonFormatterState({
+    onFocusInput: () => {
+      inputEditorRef.current?.focus();
+    },
+    onRevealInputPosition: ({ line, column }) => {
+      const editor = inputEditorRef.current;
+      if (editor) {
+        editor.focus();
+        editor.setPosition({ lineNumber: line, column });
+        editor.revealPositionInCenter({ lineNumber: line, column });
       }
-    };
-  }, []);
+    },
+  });
 
-  const indentValue = indent === "tab" ? "\t" : Number(indent);
-  const tabSize = indent === "4" ? 4 : 2;
-  const insertSpaces = indent !== "tab";
-
-  const stats = useMemo(() => {
-    const inputBytes = new Blob([input]).size;
-    const outputBytes = new Blob([output]).size;
-    return { inputBytes, outputBytes };
-  }, [input, output]);
-
-  const graphOptions = GRAPH_PRESETS[graphPreset];
-
-  const graph = useMemo(() => {
-    if (parsedValue === undefined) return null;
-    return buildJsonGraph(parsedValue, graphOptions);
-  }, [parsedValue, graphOptions]);
-
-  function parseOrThrow() {
-    const normalized = normalizeJsonText(input);
-    if (!normalized) {
-      throw new Error("输入为空：请粘贴或上传 JSON。");
-    }
-    return { normalized, value: JSON.parse(normalized) as unknown };
-  }
-
-  function focusInputEditor() {
-    inputEditorRef.current?.focus();
-  }
-
-  function flash(nextMessage: string) {
-    setMessage(nextMessage);
-    if (messageTimerRef.current != null) {
-      window.clearTimeout(messageTimerRef.current);
-    }
-    messageTimerRef.current = window.setTimeout(() => {
-      setMessage(null);
-      messageTimerRef.current = null;
-    }, 2200);
-  }
-
-  function setErrorFromUnknown(
-    unknownError: unknown,
-    normalizedForPosition?: string,
-  ) {
-    if (unknownError instanceof Error) {
-      const position = extractJsonErrorPosition(unknownError.message);
-      if (position != null && normalizedForPosition) {
-        const { line, column } = indexToLineColumn(
-          normalizedForPosition,
-          position,
-        );
-        setError(`${unknownError.message}（第 ${line} 行，第 ${column} 列）`);
-        const editor = inputEditorRef.current;
-        if (editor) {
-          editor.focus();
-          editor.setPosition({ lineNumber: line, column });
-          editor.revealPositionInCenter({ lineNumber: line, column });
-        }
-        return;
-      }
-      setError(unknownError.message);
-      return;
-    }
-
-    setError("解析失败：未知错误。");
-  }
-
-  function handleFormatOrMinify(kind: "formatted" | "minified") {
-    setError(null);
-    setMessage(null);
-    setTimingMs(null);
-    setOutputKind(null);
-
-    const start = performance.now();
-    let normalized: string | undefined;
-    try {
-      const parsed = parseOrThrow();
-      normalized = parsed.normalized;
-      const { value } = parsed;
-      const valueForOutput = sortKeys ? sortKeysDeep(value) : value;
-
-      const nextOutput =
-        kind === "formatted"
-          ? JSON.stringify(valueForOutput, null, indentValue)
-          : JSON.stringify(valueForOutput);
-
-      setOutput(`${nextOutput}\n`);
-      setOutputKind(kind);
-      setParsedValue(valueForOutput);
-      setTimingMs(performance.now() - start);
-      focusInputEditor();
-    } catch (unknownError) {
-      setOutput("");
-      setOutputKind(null);
-      setParsedValue(undefined);
-      setTimingMs(performance.now() - start);
-      setErrorFromUnknown(unknownError, normalized ?? normalizeJsonText(input));
-    }
-  }
-
-  function handleFormat() {
-    handleFormatOrMinify("formatted");
-  }
-
-  function handleMinify() {
-    handleFormatOrMinify("minified");
-  }
-
-  function handleEscape() {
-    setError(null);
-    setMessage(null);
-    setTimingMs(null);
-    setOutputKind(null);
-
-    const start = performance.now();
-    try {
-      if (!input.trim()) {
-        throw new Error("输入为空：请粘贴或上传 JSON。");
-      }
-      const escaped = escapeJsonString(input);
-      setOutput(`${escaped}\n`);
-      setOutputKind("escaped");
-      setParsedValue(undefined);
-      setTimingMs(performance.now() - start);
-      flash("已转义。");
-    } catch (unknownError) {
-      setOutput("");
-      setOutputKind(null);
-      setParsedValue(undefined);
-      setTimingMs(performance.now() - start);
-      setErrorFromUnknown(unknownError);
-    }
-  }
-
-  function handleUnescape() {
-    setError(null);
-    setMessage(null);
-    setTimingMs(null);
-    setOutputKind(null);
-
-    const start = performance.now();
-    try {
-      if (!input.trim()) {
-        throw new Error("输入为空：请粘贴或上传 JSON。");
-      }
-      const unescaped = unescapeJsonString(input);
-      setOutput(`${unescaped}\n`);
-      setOutputKind("unescaped");
-      let nextParsed: unknown | undefined;
-      try {
-        nextParsed = JSON.parse(normalizeJsonText(unescaped));
-      } catch {
-        nextParsed = undefined;
-      }
-      setParsedValue(nextParsed);
-      setTimingMs(performance.now() - start);
-      flash(nextParsed ? "已反转义并解析。" : "已反转义。");
-    } catch (unknownError) {
-      setOutput("");
-      setOutputKind(null);
-      setParsedValue(undefined);
-      setTimingMs(performance.now() - start);
-      setErrorFromUnknown(unknownError);
-    }
-  }
-
-  function handleValidate() {
-    setError(null);
-    setMessage(null);
-    setTimingMs(null);
-
-    const start = performance.now();
-    let normalized: string | undefined;
-    try {
-      const parsed = parseOrThrow();
-      normalized = parsed.normalized;
-      const { value } = parsed;
-      const valueForOutput = sortKeys ? sortKeysDeep(value) : value;
-      setOutputKind(null);
-      setParsedValue(valueForOutput);
-      setTimingMs(performance.now() - start);
-      flash("JSON 校验通过。");
-    } catch (unknownError) {
-      setParsedValue(undefined);
-      setTimingMs(performance.now() - start);
-      setErrorFromUnknown(unknownError, normalized ?? normalizeJsonText(input));
-    }
-  }
-
-  function handleClear() {
-    setInput("");
-    setOutput("");
-    setOutputKind(null);
-    setError(null);
-    setMessage(null);
-    setTimingMs(null);
-    setParsedValue(undefined);
-    setInputFileName(null);
-    setInputFileBytes(null);
-    focusInputEditor();
-  }
-
-  async function writeToClipboard(text: string) {
-    if (!text) return;
-
-    if (navigator.clipboard?.writeText && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return;
-    }
-
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    textarea.style.top = "0";
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
-  }
-
-  async function handleCopyInput() {
-    setError(null);
-    try {
-      await writeToClipboard(input);
-      flash("已复制输入到剪贴板。");
-    } catch {
-      setError("复制失败：浏览器未授予剪贴板权限。");
-    }
-  }
-
-  async function handleCopyOutput() {
-    setError(null);
-    try {
-      await writeToClipboard(output);
-      flash("已复制输出到剪贴板。");
-    } catch {
-      setError("复制失败：浏览器未授予剪贴板权限。");
-    }
-  }
-
-  async function handlePasteFromClipboard() {
-    setError(null);
-    setMessage(null);
-
-    if (!navigator.clipboard?.readText || !window.isSecureContext) {
-      setError("无法读取剪贴板：需要 HTTPS 或 localhost 环境。");
-      return;
-    }
-
-    try {
-      const text = await navigator.clipboard.readText();
-      setInput(text);
-      setOutput("");
-      setOutputKind(null);
-      setTimingMs(null);
-      setParsedValue(undefined);
-      setInputFileName(null);
-      setInputFileBytes(null);
-      flash("已从剪贴板粘贴到输入。");
-      focusInputEditor();
-    } catch {
-      setError("粘贴失败：浏览器未授予剪贴板权限。");
-    }
-  }
+  const {
+    input,
+    output,
+    outputKind,
+    rightPane,
+    mobilePane,
+    indent,
+    sortKeys,
+    graphPreset,
+    canvasMode,
+    error,
+    message,
+    timingMs,
+    inputFileName,
+    inputFileBytes,
+    stats,
+    graph,
+    tabSize,
+    insertSpaces,
+  } = state;
 
   function handlePickFile() {
     fileInputRef.current?.click();
   }
 
-  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-
-    setError(null);
-    setMessage(null);
-
-    try {
-      const text = await file.text();
-      setInput(text);
-      setOutput("");
-      setOutputKind(null);
-      setTimingMs(null);
-      setParsedValue(undefined);
-      setInputFileName(file.name);
-      setInputFileBytes(file.size);
-      flash(`已加载：${file.name}（${formatBytes(file.size)}）`);
-      focusInputEditor();
-    } catch {
-      setError("读取文件失败：请确认文件可访问且为文本 JSON。");
-    }
+    void actions.handleFileLoaded(file);
   }
 
-  function buildDownloadName(): string {
-    const baseFromInput = inputFileName
-      ? inputFileName.replace(/\.json$/i, "")
-      : null;
-
-    const fallbackBase =
-      outputKind === "minified"
-        ? "minified"
-        : outputKind === "escaped"
-          ? "escaped"
-          : outputKind === "unescaped"
-            ? "unescaped"
-            : "formatted";
-
-    const base = baseFromInput ?? fallbackBase;
-
-    if (outputKind === "minified") return `${base}.min.json`;
-    if (outputKind === "formatted") return `${base}.formatted.json`;
-    if (outputKind === "escaped") return `${base}.escaped.txt`;
-    if (outputKind === "unescaped") return `${base}.unescaped.json`;
-    return `${base}.json`;
+  function switchToInput() {
+    actions.setMobilePane("input");
   }
 
-  function handleDownloadOutput() {
-    if (!output) return;
+  function switchToCanvas() {
+    actions.setRightPane("canvas");
+    actions.setMobilePane("canvas");
+  }
 
-    const blob = new Blob([output], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = buildDownloadName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    flash("已开始下载输出文件。");
+  function switchToOutput() {
+    actions.setRightPane("output");
+    actions.setMobilePane("output");
   }
 
   async function runOutputAction(actionId: string) {
@@ -439,20 +107,6 @@ export function JsonFormatter() {
     } catch {
       // ignore
     }
-  }
-
-  function switchToInput() {
-    setMobilePane("input");
-  }
-
-  function switchToCanvas() {
-    setRightPane("canvas");
-    setMobilePane("canvas");
-  }
-
-  function switchToOutput() {
-    setRightPane("output");
-    setMobilePane("output");
   }
 
   return (
@@ -484,7 +138,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            onClick={handlePasteFromClipboard}
+            onClick={() => actions.pasteFromClipboard()}
           >
             粘贴
           </button>
@@ -498,7 +152,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 px-3 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
-            onClick={handleFormat}
+            onClick={() => actions.format()}
             disabled={!input.trim()}
           >
             格式化
@@ -506,7 +160,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            onClick={handleMinify}
+            onClick={() => actions.minify()}
             disabled={!input.trim()}
           >
             压缩
@@ -514,7 +168,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            onClick={handleEscape}
+            onClick={() => actions.escapeText()}
             disabled={!input.trim()}
           >
             转义
@@ -522,7 +176,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            onClick={handleUnescape}
+            onClick={() => actions.unescapeText()}
             disabled={!input.trim()}
           >
             反转义
@@ -530,7 +184,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            onClick={handleValidate}
+            onClick={() => actions.validate()}
             disabled={!input.trim()}
           >
             校验
@@ -538,7 +192,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            onClick={handleClear}
+            onClick={() => actions.clear()}
             disabled={!input && !output}
           >
             清空
@@ -562,7 +216,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            onClick={handlePasteFromClipboard}
+            onClick={() => actions.pasteFromClipboard()}
             aria-label="粘贴"
           >
             <ClipboardPaste className="h-5 w-5" aria-hidden="true" />
@@ -570,7 +224,7 @@ export function JsonFormatter() {
           <button
             type="button"
             className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
-            onClick={handleFormat}
+            onClick={() => actions.format()}
             disabled={!input.trim()}
           >
             格式化
@@ -613,7 +267,7 @@ export function JsonFormatter() {
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
             onClick={() => {
-              handleMinify();
+              actions.minify();
               setMobileMenuOpen(false);
             }}
             disabled={!input.trim()}
@@ -625,7 +279,7 @@ export function JsonFormatter() {
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
             onClick={() => {
-              handleEscape();
+              actions.escapeText();
               setMobileMenuOpen(false);
             }}
             disabled={!input.trim()}
@@ -637,7 +291,7 @@ export function JsonFormatter() {
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
             onClick={() => {
-              handleUnescape();
+              actions.unescapeText();
               setMobileMenuOpen(false);
             }}
             disabled={!input.trim()}
@@ -649,7 +303,7 @@ export function JsonFormatter() {
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
             onClick={() => {
-              handleValidate();
+              actions.validate();
               setMobileMenuOpen(false);
             }}
             disabled={!input.trim()}
@@ -665,7 +319,7 @@ export function JsonFormatter() {
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30"
             onClick={() => {
-              handleClear();
+              actions.clear();
               setMobileMenuOpen(false);
             }}
             disabled={!input && !output}
@@ -745,7 +399,9 @@ export function JsonFormatter() {
               <select
                 className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                 value={indent}
-                onChange={(e) => setIndent(e.target.value as IndentOption)}
+                onChange={(e) =>
+                  actions.setIndent(e.target.value as IndentOption)
+                }
               >
                 <option value="2">2</option>
                 <option value="4">4</option>
@@ -758,7 +414,7 @@ export function JsonFormatter() {
                 type="checkbox"
                 className="h-4 w-4 accent-zinc-900 dark:accent-zinc-100"
                 checked={sortKeys}
-                onChange={(e) => setSortKeys(e.target.checked)}
+                onChange={(e) => actions.setSortKeys(e.target.checked)}
               />
               <span>排序 key</span>
             </label>
@@ -766,7 +422,7 @@ export function JsonFormatter() {
             <button
               type="button"
               className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-              onClick={handleCopyInput}
+              onClick={() => actions.copyInput()}
               disabled={!input}
             >
               复制
@@ -778,11 +434,7 @@ export function JsonFormatter() {
               className="h-full w-full"
               value={input}
               onChange={(next) => {
-                setInput(next);
-                setParsedValue(undefined);
-                setError(null);
-                setMessage(null);
-                setOutputKind(null);
+                actions.updateInput(next);
               }}
               ariaLabel="JSON input"
               tabSize={tabSize}
@@ -838,7 +490,7 @@ export function JsonFormatter() {
                     className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                     value={canvasMode}
                     onChange={(e) =>
-                      setCanvasMode(e.target.value as CanvasMode)
+                      actions.setCanvasMode(e.target.value as CanvasMode)
                     }
                   >
                     <option value="flow">Flow</option>
@@ -851,7 +503,7 @@ export function JsonFormatter() {
                     className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                     value={graphPreset}
                     onChange={(e) =>
-                      setGraphPreset(e.target.value as GraphPreset)
+                      actions.setGraphPreset(e.target.value as GraphPreset)
                     }
                   >
                     <option value="default">默认</option>
@@ -885,7 +537,7 @@ export function JsonFormatter() {
               <button
                 type="button"
                 className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-                onClick={handleCopyOutput}
+                onClick={() => actions.copyOutput()}
                 disabled={!output}
               >
                 复制
@@ -893,7 +545,7 @@ export function JsonFormatter() {
               <button
                 type="button"
                 className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-                onClick={handleDownloadOutput}
+                onClick={() => actions.downloadOutput()}
                 disabled={!output}
               >
                 下载
@@ -917,7 +569,7 @@ export function JsonFormatter() {
                 />
                 {!output ? (
                   <div className="pointer-events-none absolute left-3 top-3 select-none text-sm text-zinc-400 dark:text-zinc-500">
-                    格式化/压缩/转义结果会显示在这里。
+                    格式化/压缩/转义/反转义结果会显示在这里。
                   </div>
                 ) : null}
               </div>
