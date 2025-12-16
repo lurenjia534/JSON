@@ -80,7 +80,7 @@ export function MonacoJsonEditor({
       minimap: { enabled: false },
       automaticLayout: true,
       scrollBeyondLastLine: false,
-      lineNumbers: isMobile ? "off" : lineNumbersOption,
+      lineNumbers: lineNumberMode === "off" ? "off" : lineNumbersOption,
       lineNumbersMinChars: lineNumberMode === "focus" ? 1 : undefined,
       glyphMargin: false,
       lineDecorationsWidth: 8,
@@ -103,12 +103,12 @@ export function MonacoJsonEditor({
     } as const;
   }, [
     insertSpaces,
-    isMobile,
     lineNumberMode,
     lineNumbersOption,
     readOnly,
     tabSize,
     wordWrap,
+    isMobile,
   ]);
 
   return (
