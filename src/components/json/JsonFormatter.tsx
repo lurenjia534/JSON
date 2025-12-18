@@ -31,6 +31,8 @@ type MonacoEditor = MonacoEditorNamespace.IStandaloneCodeEditor;
 
 export function JsonFormatter() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Default to compact layout on mobile to preserve vertical space.
+  const [compactHeader, setCompactHeader] = useState(true);
   const [wordWrap, setWordWrap] = useState(false);
   const [lineNumberMode, setLineNumberMode] = useState<
     "off" | "focus" | "full"
@@ -256,6 +258,54 @@ export function JsonFormatter() {
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
         <div className="absolute right-2 top-14 z-50 min-w-[160px] rounded-xl border border-zinc-200 bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden dark:border-zinc-700 dark:bg-zinc-900/95">
+          {compactHeader ? (
+            <div className="rounded-lg border border-zinc-200 bg-white p-1 text-xs dark:border-zinc-700 dark:bg-zinc-900">
+              <div className="inline-flex w-full items-center gap-1">
+                <button
+                  type="button"
+                  className={`inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 font-medium ${
+                    mobilePane === "input"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                      : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                  onClick={() => {
+                    switchToInput();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  输入
+                </button>
+                <button
+                  type="button"
+                  className={`inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 font-medium ${
+                    mobilePane === "canvas"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                      : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                  onClick={() => {
+                    switchToCanvas();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  画布
+                </button>
+                <button
+                  type="button"
+                  className={`inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 font-medium ${
+                    mobilePane === "output"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                      : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                  onClick={() => {
+                    switchToOutput();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  输出
+                </button>
+              </div>
+            </div>
+          ) : null}
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 dark:text-zinc-100 dark:hover:bg-zinc-800"
@@ -279,6 +329,21 @@ export function JsonFormatter() {
             <Minimize2 className="h-4 w-4 text-zinc-500" aria-hidden="true" />
             压缩
           </button>
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-zinc-900 dark:accent-zinc-100"
+              checked={compactHeader}
+              onChange={(e) => setCompactHeader(e.target.checked)}
+              id="mobile-compact-header"
+            />
+            <label
+              className="flex-1 cursor-pointer select-none"
+              htmlFor="mobile-compact-header"
+            >
+              紧凑模式
+            </label>
+          </div>
           <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100">
             <input
               type="checkbox"
@@ -310,6 +375,107 @@ export function JsonFormatter() {
               <option value="full">全部</option>
             </select>
           </div>
+          {compactHeader ? (
+            <>
+              <div className="my-1.5 border-t border-zinc-100 dark:border-zinc-800" />
+              {mobilePane === "input" ? (
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  onClick={() => {
+                    actions.copyInput();
+                    setMobileMenuOpen(false);
+                  }}
+                  disabled={!input}
+                >
+                  复制输入
+                </button>
+              ) : null}
+              {mobilePane === "output" ? (
+                <>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      void runOutputAction("editor.foldAll");
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={!output}
+                  >
+                    折叠
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      void runOutputAction("editor.unfoldAll");
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={!output}
+                  >
+                    展开
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      actions.copyOutput();
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={!output}
+                  >
+                    复制输出
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={() => {
+                      actions.downloadOutput();
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={!output}
+                  >
+                    下载输出
+                  </button>
+                </>
+              ) : null}
+              {mobilePane === "canvas" ? (
+                <>
+                  <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100">
+                    <span className="w-16 text-left text-xs text-zinc-500 dark:text-zinc-400">
+                      画布
+                    </span>
+                    <select
+                      className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      value={canvasMode}
+                      onChange={(e) =>
+                        actions.setCanvasMode(e.target.value as CanvasMode)
+                      }
+                    >
+                      <option value="flow">Flow</option>
+                      <option value="native">Native</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100">
+                    <span className="w-16 text-left text-xs text-zinc-500 dark:text-zinc-400">
+                      范围
+                    </span>
+                    <select
+                      className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      value={graphPreset}
+                      onChange={(e) =>
+                        actions.setGraphPreset(e.target.value as GraphPreset)
+                      }
+                    >
+                      <option value="default">默认</option>
+                      <option value="more">更多</option>
+                      <option value="all">全部（谨慎）</option>
+                    </select>
+                  </div>
+                </>
+              ) : null}
+            </>
+          ) : null}
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
@@ -365,43 +531,45 @@ export function JsonFormatter() {
         </div>
       )}
 
-      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200/70 bg-white/60 px-2 py-2 lg:hidden dark:border-zinc-800/70 dark:bg-zinc-950/40">
-        <div className="inline-flex flex-1 items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
-          <button
-            type="button"
-            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
-              mobilePane === "input"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            }`}
-            onClick={switchToInput}
-          >
-            输入
-          </button>
-          <button
-            type="button"
-            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
-              mobilePane === "canvas"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            }`}
-            onClick={switchToCanvas}
-          >
-            画布
-          </button>
-          <button
-            type="button"
-            className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
-              mobilePane === "output"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            }`}
-            onClick={switchToOutput}
-          >
-            输出
-          </button>
+      {!compactHeader ? (
+        <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200/70 bg-white/60 px-2 py-2 lg:hidden dark:border-zinc-800/70 dark:bg-zinc-950/40">
+          <div className="inline-flex flex-1 items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
+            <button
+              type="button"
+              className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+                mobilePane === "input"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                  : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              }`}
+              onClick={switchToInput}
+            >
+              输入
+            </button>
+            <button
+              type="button"
+              className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+                mobilePane === "canvas"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                  : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              }`}
+              onClick={switchToCanvas}
+            >
+              画布
+            </button>
+            <button
+              type="button"
+              className={`inline-flex h-9 flex-1 items-center justify-center rounded-full px-3 font-medium ${
+                mobilePane === "output"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                  : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              }`}
+              onClick={switchToOutput}
+            >
+              输出
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
         <section
@@ -409,7 +577,9 @@ export function JsonFormatter() {
             mobilePane === "input" ? "flex" : "hidden"
           }`}
         >
-          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40">
+          <div
+            className={`${compactHeader ? "hidden lg:flex" : "flex"} shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40`}
+          >
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 输入
@@ -516,7 +686,9 @@ export function JsonFormatter() {
             mobilePane === "input" ? "hidden" : "flex"
           }`}
         >
-          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40">
+          <div
+            className={`${compactHeader ? "hidden lg:flex" : "flex"} shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40`}
+          >
             <div className="inline-flex items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
               <button
                 type="button"
