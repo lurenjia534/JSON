@@ -33,6 +33,7 @@ export function JsonFormatter() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Default to compact layout on mobile to preserve vertical space.
   const [compactHeader, setCompactHeader] = useState(true);
+  const [fullScreenOutput, setFullScreenOutput] = useState(false);
   const [wordWrap, setWordWrap] = useState(false);
   const [lineNumberMode, setLineNumberMode] = useState<
     "off" | "focus" | "full"
@@ -103,6 +104,16 @@ export function JsonFormatter() {
     actions.setMobilePane("output");
   }
 
+  function enterFullScreenOutput() {
+    switchToOutput();
+    setFullScreenOutput(true);
+    setMobileMenuOpen(false);
+  }
+
+  function exitFullScreenOutput() {
+    setFullScreenOutput(false);
+  }
+
   async function runOutputAction(actionId: string) {
     const editor = outputEditorRef.current;
     if (!editor) return;
@@ -117,7 +128,9 @@ export function JsonFormatter() {
 
   return (
     <div className="flex h-svh flex-col overflow-hidden bg-zinc-50 text-zinc-900 lg:h-screen dark:bg-black dark:text-zinc-100">
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-zinc-200/70 bg-white/80 px-3 backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/70">
+      <header
+        className={`${fullScreenOutput ? "hidden lg:flex" : "flex"} h-12 shrink-0 items-center gap-3 border-b border-zinc-200/70 bg-white/80 px-3 backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/70`}
+      >
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-zinc-900 px-2 py-0.5 font-mono text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-950">
             {"{}"}
@@ -256,7 +269,7 @@ export function JsonFormatter() {
       </header>
 
       {/* Mobile dropdown menu */}
-      {mobileMenuOpen && (
+      {mobileMenuOpen && !fullScreenOutput && (
         <div className="absolute right-2 top-14 z-50 min-w-[160px] rounded-xl border border-zinc-200 bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden dark:border-zinc-700 dark:bg-zinc-900/95">
           {compactHeader ? (
             <div className="rounded-lg border border-zinc-200 bg-white p-1 text-xs dark:border-zinc-700 dark:bg-zinc-900">
@@ -329,6 +342,27 @@ export function JsonFormatter() {
             <Minimize2 className="h-4 w-4 text-zinc-500" aria-hidden="true" />
             压缩
           </button>
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-zinc-900 dark:accent-zinc-100"
+              checked={fullScreenOutput}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  enterFullScreenOutput();
+                } else {
+                  setFullScreenOutput(false);
+                }
+              }}
+              id="mobile-fullscreen-output"
+            />
+            <label
+              className="flex-1 cursor-pointer select-none"
+              htmlFor="mobile-fullscreen-output"
+            >
+              全屏输出
+            </label>
+          </div>
           <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100">
             <input
               type="checkbox"
@@ -531,7 +565,18 @@ export function JsonFormatter() {
         </div>
       )}
 
-      {!compactHeader ? (
+      {fullScreenOutput ? (
+        <button
+          type="button"
+          className="fixed right-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-900 shadow-sm backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/90 dark:text-zinc-100"
+          onClick={exitFullScreenOutput}
+          aria-label="退出全屏"
+        >
+          <Minimize2 className="h-5 w-5" aria-hidden="true" />
+        </button>
+      ) : null}
+
+      {!compactHeader && !fullScreenOutput ? (
         <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200/70 bg-white/60 px-2 py-2 lg:hidden dark:border-zinc-800/70 dark:bg-zinc-950/40">
           <div className="inline-flex flex-1 items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
             <button
@@ -578,7 +623,7 @@ export function JsonFormatter() {
           }`}
         >
           <div
-            className={`${compactHeader ? "hidden lg:flex" : "flex"} shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40`}
+            className={`${compactHeader || fullScreenOutput ? "hidden lg:flex" : "flex"} shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40`}
           >
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -687,7 +732,7 @@ export function JsonFormatter() {
           }`}
         >
           <div
-            className={`${compactHeader ? "hidden lg:flex" : "flex"} shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40`}
+            className={`${compactHeader || fullScreenOutput ? "hidden lg:flex" : "flex"} shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200/70 bg-white/60 p-2 dark:border-zinc-800/70 dark:bg-zinc-950/40`}
           >
             <div className="inline-flex items-center rounded-full border border-zinc-200 bg-white p-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
               <button
@@ -820,7 +865,9 @@ export function JsonFormatter() {
         </section>
       </main>
 
-      <footer className="flex shrink-0 items-center gap-2 border-t border-zinc-200/70 bg-white/80 px-3 py-2 text-xs text-zinc-500 backdrop-blur sm:gap-3 dark:border-zinc-800/70 dark:bg-zinc-950/70 dark:text-zinc-400">
+      <footer
+        className={`${fullScreenOutput ? "hidden lg:flex" : "flex"} shrink-0 items-center gap-2 border-t border-zinc-200/70 bg-white/80 px-3 py-2 text-xs text-zinc-500 backdrop-blur sm:gap-3 dark:border-zinc-800/70 dark:bg-zinc-950/70 dark:text-zinc-400`}
+      >
         <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <span className="whitespace-nowrap">
             {formatBytes(stats.inputBytes)} → {formatBytes(stats.outputBytes)}
